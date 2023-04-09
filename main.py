@@ -64,11 +64,15 @@ def login(inst):
         else:
             messagebox.showerror(title="Login Failed", message="Incorrect username and/or password.")
 
-def create_menus(inst):
+def clear_widgets(inst):
     # Clear Inst Widgets
     widgets = inst.root.pack_slaves()
     for w in widgets:
         w.destroy()
+
+def create_menus(inst):
+    # Clear Screen
+    clear_widgets(inst)
 
     top = Menu(inst.root)
     root.config(menu=top)
@@ -157,6 +161,9 @@ def create_loginpage(inst, user, top):
 
 
 def create_viewpage(inst):
+    # Clear Screen
+    clear_widgets(inst)
+
     view = ttk.Treeview(inst.root, columns=("id", "name", "qty"))
     api.update_items(view, inst.connection, "", "")
     view.heading("id", text="Item ID")
