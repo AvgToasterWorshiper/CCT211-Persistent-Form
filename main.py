@@ -1,6 +1,9 @@
 from tkinter import *
-from tkinter import messagebox
+from tkinter import messagebox, ttk
 import sqlite3
+
+import api
+
 
 class Session:
     def __init__(self, root, userID=None):
@@ -152,8 +155,34 @@ def create_loginpage(inst, user, top):
     top.add_cascade(label='User', menu=user, underline=0)
 
 
-def create_viewpage(root):
-    pass
+def create_viewpage(inst):
+    view = ttk.Treeview(inst.root, columns=("Item ID", "Name", "Quantity"))
+
+    filter_frame = LabelFrame(inst.root, text="Filter Items")
+    id_frame = Frame(filter_frame)
+    id_label = Label(id_frame, text="Item ID:")
+    id_entry = Entry(id_frame)
+
+    id_label.pack(side='left')
+    id_entry.pack(side='left')
+
+    name_frame = Frame(filter_frame)
+    name_label = Label(name_frame, text="Item Name:")
+    name_entry = Entry(name_frame)
+
+    enter_button = Button(filter_frame, text="Filter",
+                          command=lambda: api.update_items(view, inst.connection, id_entry.get(), name_entry.get()))
+
+    name_label.pack(side='left')
+    name_entry.pack(side='left')
+
+    id_frame.pack()
+    name_frame.pack()
+    enter_button.pack()
+
+    filter_frame.pack()
+    view.pack()
+
 
 def create_editpage(root):
     pass
