@@ -16,4 +16,5 @@ def update_items(treeview: tkinter.ttk.Treeview, connection: Connection, filter_
         treeview.delete(row)
 
     items = filter_items(connection, filter_id, filter_name)
-
+    for item in items:
+        treeview.insert("", 0, values=(item[0], item[1], item[2]))

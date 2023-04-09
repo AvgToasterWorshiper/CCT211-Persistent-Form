@@ -88,7 +88,8 @@ def create_menus(inst):
             # Add Database view tab
             view_inventory = Menu(top, tearoff=False)
             view_inventory.add_separator()
-            top.add_cascade(label='View Inventory', menu=view_inventory, underline=0)
+            # TODO: This might not be right, will have to verify later.
+            top.add_command(label='View Inventory', command=lambda: create_viewpage(inst))
 
         if inst.perms['Edit'] == 1:
             # Add Database edit tab
@@ -156,7 +157,11 @@ def create_loginpage(inst, user, top):
 
 
 def create_viewpage(inst):
-    view = ttk.Treeview(inst.root, columns=("Item ID", "Name", "Quantity"))
+    view = ttk.Treeview(inst.root, columns=("id", "name", "qty"))
+    api.update_items(view, inst.connection, "", "")
+    view.heading("id", text="Item ID")
+    view.heading("name", text="Name")
+    view.heading("qty", text="Quantity")
 
     filter_frame = LabelFrame(inst.root, text="Filter Items")
     id_frame = Frame(filter_frame)
