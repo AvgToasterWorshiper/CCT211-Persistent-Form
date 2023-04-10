@@ -34,6 +34,12 @@ class Session:
     def update_qty(self):
         pass
 
+    def add_items(self, treeview: tkinter.ttk.Treeview, connection: Connection, name: str, quantity: int) -> None:
+        # Will add quantity to {item} or create a new entry if none exist
+        api.add_items(self, connection, name, quantity)
+
+        self.update_items(treeview, connection, '', name)
+
 
 def quit(inst):
     inst.root.quit()
@@ -116,6 +122,8 @@ def create_menus(inst):
             # Add Database edit tab
             edit_inventory = Menu(top, tearoff=False)
             edit_inventory.add_command(label="Sign item in/out...", command=lambda: create_signoutpage(inst))
+            edit_inventory.add_command(label="Add item(s)", command=lambda: create_addpage(inst))
+            edit_inventory.add_command(label="Remove item(s)", command=lambda: create_removepage(inst))
             top.add_cascade(label='Edit Inventory', menu=edit_inventory, underline=0)
 
 
@@ -220,7 +228,47 @@ def create_viewpage(inst):
     view.pack()
 
 
-def create_editpage(inst):
+def create_addpage(inst):
+    # Clear Screen
+    clear_widgets(inst)
+
+    view = ttk.Treeview(inst.root, columns=("id", "name", "qty"))
+    inst.update_items(view, inst.connection, "", "")
+    view.heading("id", text="Item ID")
+    view.heading("name", text="Name")
+    view.heading("qty", text="Quantity")
+
+    filter_frame = LabelFrame(inst.root, text="Enter Item ID, Name and Quantity to Add")
+
+    name_frame = Frame(filter_frame)
+    name_label = Label(name_frame, text="Item Name:")
+    name_entry = Entry(name_frame)
+
+    name_label.pack(side='left')
+    name_entry.pack(side='left')
+
+    quantity_frame = Frame(filter_frame)
+    quantity_label = Label(quantity_frame, text="Quantity:")
+    quantity_entry = Entry(quantity_frame)
+
+    quantity_label.pack(side='left')
+    quantity_entry.pack(side='left')
+
+    enter_button = Button(filter_frame, text="Add Item(s)",
+                          command=lambda: inst.add_items(view,
+                                                            inst.connection,
+                                                            name_entry.get(), quantity_entry.get()))
+
+
+
+    name_frame.pack()
+    quantity_frame.pack()
+    enter_button.pack()
+
+    filter_frame.pack()
+    view.pack()
+
+def create_removepage(inst):
     pass
 
 def create_eventspage(root):
