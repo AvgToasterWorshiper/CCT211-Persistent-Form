@@ -34,9 +34,15 @@ class Session:
     def update_qty(self):
         pass
 
-    def add_items(self, treeview: tkinter.ttk.Treeview, connection: Connection, name: str, quantity: int) -> None:
+    def add_items(self, treeview: tkinter.ttk.Treeview, connection: Connection, name: str, quantity: str) -> None:
         # Will add quantity to {item} or create a new entry if none exist
         api.add_items(self, connection, name, quantity)
+
+        self.update_items(treeview, connection, '', name)
+
+    def remove_items(self, treeview: tkinter.ttk.Treeview, connection: Connection, name: str, quantity: str) -> None:
+        # Will remove quantity from {item} or remove entry if none exists
+        api.remove_items(self, connection, name, quantity)
 
         self.update_items(treeview, connection, '', name)
 
@@ -238,7 +244,7 @@ def create_addpage(inst):
     view.heading("name", text="Name")
     view.heading("qty", text="Quantity")
 
-    filter_frame = LabelFrame(inst.root, text="Enter Item ID, Name and Quantity to Add")
+    filter_frame = LabelFrame(inst.root, text="Enter Item Name and Quantity to Add")
 
     name_frame = Frame(filter_frame)
     name_label = Label(name_frame, text="Item Name:")
@@ -269,7 +275,44 @@ def create_addpage(inst):
     view.pack()
 
 def create_removepage(inst):
-    pass
+    # Clear Screen
+    clear_widgets(inst)
+
+    view = ttk.Treeview(inst.root, columns=("id", "name", "qty"))
+    inst.update_items(view, inst.connection, "", "")
+    view.heading("id", text="Item ID")
+    view.heading("name", text="Name")
+    view.heading("qty", text="Quantity")
+
+    filter_frame = LabelFrame(inst.root,
+                              text="Enter Item Name and Quantity to Remove")
+
+    name_frame = Frame(filter_frame)
+    name_label = Label(name_frame, text="Item Name:")
+    name_entry = Entry(name_frame)
+
+    name_label.pack(side='left')
+    name_entry.pack(side='left')
+
+    quantity_frame = Frame(filter_frame)
+    quantity_label = Label(quantity_frame, text="Quantity:")
+    quantity_entry = Entry(quantity_frame)
+
+    quantity_label.pack(side='left')
+    quantity_entry.pack(side='left')
+
+    enter_button = Button(filter_frame, text="Remove Item(s)",
+                          command=lambda: inst.remove_items(view,
+                                                         inst.connection,
+                                                         name_entry.get(),
+                                                         quantity_entry.get()))
+
+    name_frame.pack()
+    quantity_frame.pack()
+    enter_button.pack()
+
+    filter_frame.pack()
+    view.pack()
 
 def create_eventspage(root):
     pass
