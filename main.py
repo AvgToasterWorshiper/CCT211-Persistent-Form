@@ -1,3 +1,5 @@
+import tkinter
+from sqlite3 import Connection
 from tkinter import *
 from tkinter import messagebox, ttk
 import sqlite3
@@ -21,8 +23,21 @@ class Session:
 
         create_menus(self)
 
+    def update_items(self, treeview: tkinter.ttk.Treeview, connection: Connection, filter_id: str, filter_name: str) -> None:
+        for row in treeview.get_children():
+            treeview.delete(row)
+
+        items = api.filter_items(connection, filter_id, filter_name)
+        for item in items:
+            treeview.insert("", 0, values=(item[0], item[1], item[2]))
+
+    def update_qty(self):
+        pass
+
+
 def quit(inst):
     inst.root.quit()
+
 
 def login(inst):
     """
@@ -64,11 +79,13 @@ def login(inst):
         else:
             messagebox.showerror(title="Login Failed", message="Incorrect username and/or password.")
 
+
 def clear_widgets(inst):
     # Clear Inst Widgets
     widgets = inst.root.pack_slaves()
     for w in widgets:
         w.destroy()
+
 
 def create_menus(inst):
     # Clear Screen
@@ -98,8 +115,10 @@ def create_menus(inst):
         if inst.perms['Edit'] == 1:
             # Add Database edit tab
             edit_inventory = Menu(top, tearoff=False)
-            edit_inventory.add_separator()
+            edit_inventory.add_command(label="Sign item in/out...", command=lambda: create_signoutpage(inst))
             top.add_cascade(label='Edit Inventory', menu=edit_inventory, underline=0)
+
+
 
         if inst.perms['Events'] == 1:
             # Add Database edit tab
@@ -112,6 +131,7 @@ def create_menus(inst):
     else:
         create_loginpage(inst, user, top)
 
+
 def create_welcomescreen(inst):
     # Creates welcome page with UserID
     welcome_screen = Frame(inst.root)
@@ -120,6 +140,7 @@ def create_welcomescreen(inst):
                             font=("Arial", 15))
     welcome_message.pack(anchor="center", fill=BOTH, expand=1, padx=40, pady=40)
     welcome_screen.pack(anchor="center", fill=BOTH, expand=1, padx=40, pady=40)
+
 
 def create_loginpage(inst, user, top):
     # This is an 'empty instance'
@@ -147,6 +168,9 @@ def create_loginpage(inst, user, top):
     userid_entry.pack(side='top', fill=BOTH, expand=1, padx=40, pady=40)
     userpassword_entry.pack(side='top', fill=BOTH, expand=1, padx=40, pady=40)
 
+    userid_entry.bind('<Return>', lambda event: login(inst))
+    userpassword_entry.bind('<Return>', lambda event: login(inst))
+
     login_frame_left.pack(side='left', fill=BOTH, expand=1)
     login_frame_right.pack(side='right', fill=BOTH, expand=1)
 
@@ -165,7 +189,7 @@ def create_viewpage(inst):
     clear_widgets(inst)
 
     view = ttk.Treeview(inst.root, columns=("id", "name", "qty"))
-    api.update_items(view, inst.connection, "", "")
+    inst.update_items(view, inst.connection, "", "")
     view.heading("id", text="Item ID")
     view.heading("name", text="Name")
     view.heading("qty", text="Quantity")
@@ -183,7 +207,7 @@ def create_viewpage(inst):
     name_entry = Entry(name_frame)
 
     enter_button = Button(filter_frame, text="Filter",
-                          command=lambda: api.update_items(view, inst.connection, id_entry.get(), name_entry.get()))
+                          command=lambda: inst.update_items(view, inst.connection, id_entry.get(), name_entry.get()))
 
     name_label.pack(side='left')
     name_entry.pack(side='left')
@@ -196,11 +220,46 @@ def create_viewpage(inst):
     view.pack()
 
 
-def create_editpage(root):
+def create_editpage(inst):
     pass
 
 def create_eventspage(root):
     pass
+
+
+def create_signoutpage(inst: Session):
+    clear_widgets(inst)
+    query_type = StringVar(inst.root, "id")
+    item_query = StringVar()
+
+    item_frame = LabelFrame(inst.root, text="Item to modify")
+
+    Label(item_frame, text="Search item").pack()
+    item_search_frame = Frame(item_frame)
+
+    Entry(item_search_frame, textvariable=item_query).pack()
+    item_type_frame = Frame(item_search_frame)
+
+    Label(item_type_frame, text="Search by: ").pack(side='left')
+    Radiobutton(item_type_frame, text="ID", variable=query_type, value="id").pack(side='left')
+    Radiobutton(item_type_frame, text="Item Name", variable=query_type, value="name").pack(side='left')
+
+    item_search_frame.pack()
+    item_type_frame.pack()
+    item_frame.pack()
+
+    qty_frame = Frame(inst.root)
+    qty = StringVar(inst.root, "1")
+
+    Label(qty_frame, text="Quantity: ").pack(side='left')
+    Entry(qty_frame, textvariable=qty).pack(side='left')
+    qty_frame.pack()
+    sign = StringVar(inst.root, "out")
+    Radiobutton(inst.root, text="In", variable=sign, value="in").pack()
+    Radiobutton(inst.root, text="Out", variable=sign, value="out").pack()
+
+    Button(inst.root, text="Submit", command=lambda: inst.update_qty())
+
 
 # Initialize tk
 root = Tk()
