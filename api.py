@@ -1,9 +1,15 @@
 import sqlite3
+import time
 import tkinter
 import tkinter.ttk
+import zoneinfo
+from datetime import datetime
 from tkinter import *
 from sqlite3 import Connection, Cursor
+from tkinter import messagebox
 from typing import List, Any
+
+from main import Session
 
 
 def filter_items(connection: Connection, filter_id: str, filter_name: str) -> List[Any]:
@@ -12,8 +18,8 @@ def filter_items(connection: Connection, filter_id: str, filter_name: str) -> Li
                         (f"%{filter_id}%", f"%{filter_name}%"))
     return items.fetchall()
 
-def add_items(session, connection: Connection, name: str, quantity: str):
 
+def add_items(session: Session, connection: Connection, name: str, quantity: str):
     # Clear old messages
     widgets = session.root.pack_slaves()
     for w in widgets:
@@ -22,7 +28,7 @@ def add_items(session, connection: Connection, name: str, quantity: str):
 
     message = Label(session.root, text="", font=("Arial", 12))
 
-    #check if quantity is proper:
+    # check if quantity is proper:
     if quantity.isnumeric():
         quantity = int(quantity)
         cur = connection.cursor()
@@ -47,7 +53,8 @@ def add_items(session, connection: Connection, name: str, quantity: str):
 
     message.pack()
 
-def remove_items(session, connection: Connection, name: str, quantity: str):
+
+def remove_items(session: Session, connection: Connection, name: str, quantity: str):
     # Clear old messages
     widgets = session.root.pack_slaves()
     for w in widgets:
@@ -73,14 +80,39 @@ def remove_items(session, connection: Connection, name: str, quantity: str):
             # Remove entry
             cur.execute("DELETE FROM items WHERE qty<=0 and name=?",
                         (name,))
-            message.config(text="Successfully removed entry: {} with 0 item(s)".format(name))
+            messagebox.showinfo("Success", "Successfully removed entry: {} with 0 item(s)".format(name))
 
         else:
-            message.config(text="Successfully removed {} item(s)".format(quantity))
+            messagebox.showinfo("Success", "Successfully removed {} item(s)".format(quantity))
 
         connection.commit()
 
     else:
-        message.config(text="Please use a valid (int) quantity")
+        messagebox.showerror("Error", "Please use a valid (int) quantity")
 
     message.pack()
+
+
+def log_event(connection: Connection, id: str, user: str, name: str, evt_type: str, qty: int) -> bool:
+    """
+    Logs events to the events database.
+
+    type should be one of ("In", "Out")
+
+    :param qty:
+    :param user:
+    :param connection:
+    :param id:
+    :param name:
+    :param evt_type:
+    :return:
+    """
+    date = datetime.utcnow()
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute("INSERT INTO events VALUES(?, ?, ?, ?, ?, ?)", (str(date), user, qty, evt_type, id, name))
+        connection.commit()
+        return True
+    except sqlite3.Error:
+        return False
