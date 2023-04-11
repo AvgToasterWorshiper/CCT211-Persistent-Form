@@ -39,15 +39,54 @@ class Session:
 
     def add_items(self, treeview: tkinter.ttk.Treeview, connection: Connection, name: str, quantity: str) -> None:
         # Will add quantity to {item} or create a new entry if none exist
-        api.add_items(self, connection, name, quantity)
+
+        # Clear old messages
+        widgets = self.root.pack_slaves()
+        for w in widgets:
+            if type(w) is tkinter.Label:
+                w.destroy()
+
+        message = Label(self.root, text="", font=("Arial", 12))
+
+        status = api.add_items(connection, name, quantity)
+        if status == 1:
+            message.config(
+                text="Successfully added new entry with {} item(s)".format(
+                    quantity))
+        elif status == 2:
+            message.config(
+                text="Successfully added new entry with {} item(s)".format(
+                    quantity))
+        elif status == 0:
+            message.config(
+                text="Please use a valid (int) quantity".format(quantity))
 
         self.update_items(treeview, connection, '', name)
+
+        message.pack()
 
     def remove_items(self, treeview: tkinter.ttk.Treeview, connection: Connection, name: str, quantity: str) -> None:
         # Will remove quantity from {item} or remove entry if none exists
-        api.remove_items(self, connection, name, quantity)
+
+        # Clear old messages
+        widgets = self.root.pack_slaves()
+        for w in widgets:
+            if type(w) is tkinter.Label:
+                w.destroy()
+
+        message = Label(self.root, text="", font=("Arial", 12))
+
+        status = api.remove_items(self, connection, name, quantity)
+        if status == 1:
+            message.config(text="Successfully removed entry: {} with 0 item(s)".format(name))
+        elif status == 2:
+            message.config(text="Successfully removed {} item(s)".format(quantity))
+        elif status == 0:
+            message.config(text="Please use a valid (int) quantity")
 
         self.update_items(treeview, connection, '', name)
+
+        message.pack()
 
 
 def quit(inst):
