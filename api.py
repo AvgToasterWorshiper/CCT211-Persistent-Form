@@ -9,8 +9,6 @@ from sqlite3 import Connection, Cursor
 from tkinter import messagebox
 from typing import List, Any
 
-from main import Session
-
 
 def filter_items(connection: Connection, filter_id: str, filter_name: str) -> List[Any]:
     cur = connection.cursor()
@@ -19,7 +17,7 @@ def filter_items(connection: Connection, filter_id: str, filter_name: str) -> Li
     return items.fetchall()
 
 
-def add_items(session: Session, connection: Connection, name: str, quantity: str):
+def add_items(session, connection: Connection, name: str, quantity: str):
     # Clear old messages
     widgets = session.root.pack_slaves()
     for w in widgets:
@@ -54,7 +52,7 @@ def add_items(session: Session, connection: Connection, name: str, quantity: str
     message.pack()
 
 
-def remove_items(session: Session, connection: Connection, name: str, quantity: str):
+def remove_items(session, connection: Connection, name: str, quantity: str):
     # Clear old messages
     widgets = session.root.pack_slaves()
     for w in widgets:
