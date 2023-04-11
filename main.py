@@ -6,6 +6,9 @@ import sqlite3
 
 import api
 
+# USER SIGN INS
+# Admin: user_id: Admin, Password: Password
+# Employee: user_id: Employee, Password: abc
 
 class Session:
     def __init__(self, root, userID=None):
@@ -75,12 +78,15 @@ def login(inst):
             inst.perms['View'] = \
                 cur.execute("SELECT View FROM Users WHERE UserID IS ?",
                         (inst.attempt_user.get(),)).fetchone()[0]
-            inst.perms['Edit'] = \
-            cur.execute("SELECT Edit FROM Users WHERE UserID IS ?",
+            inst.perms['Signout'] = \
+            cur.execute("SELECT Signout FROM Users WHERE UserID IS ?",
                         (inst.attempt_user.get(),)).fetchone()[0]
             inst.perms['Events'] = \
             cur.execute("SELECT Events FROM Users WHERE UserID IS ?",
                         (inst.attempt_user.get(),)).fetchone()[0]
+            inst.perms['AddRemove'] = \
+                cur.execute("SELECT AddRemove FROM Users WHERE UserID IS ?",
+                            (inst.attempt_user.get(),)).fetchone()[0]
 
             inst.attempt_user.set("")
             inst.attempt_pass.set("")
@@ -124,15 +130,18 @@ def create_menus(inst):
             # TODO: This might not be right, will have to verify later.
             top.add_command(label='View Inventory', command=lambda: create_viewpage(inst))
 
-        if inst.perms['Edit'] == 1:
+        if inst.perms['Signout'] == 1:
             # Add Database edit tab
             edit_inventory = Menu(top, tearoff=False)
             edit_inventory.add_command(label="Sign item in/out...", command=lambda: create_signoutpage(inst))
-            edit_inventory.add_command(label="Add item(s)", command=lambda: create_addpage(inst))
-            edit_inventory.add_command(label="Remove item(s)", command=lambda: create_removepage(inst))
             top.add_cascade(label='Edit Inventory', menu=edit_inventory, underline=0)
 
-
+            if inst.perms['AddRemove'] == 1:
+                # Additional functionality for admins
+                edit_inventory.add_command(label="Add item(s)",
+                                           command=lambda: create_addpage(inst))
+                edit_inventory.add_command(label="Remove item(s)",
+                                           command=lambda: create_removepage(inst))
 
         if inst.perms['Events'] == 1:
             # Add Database edit tab
