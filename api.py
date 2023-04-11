@@ -110,3 +110,9 @@ def insert_event(connection: Connection, user_id, qty: str, type, item_id: str, 
         return True
     except sqlite3.Error:
         return False
+
+
+def get_events(connection: Connection):
+    cur = connection.cursor()
+    items = cur.execute("SELECT * FROM events")
+    return items.fetchall()

@@ -23,13 +23,21 @@ class Session:
 
         create_menus(self)
 
-    def update_items(self, treeview: tkinter.ttk.Treeview, connection: Connection, filter_id: str, filter_name: str):
+    def update_items(self, treeview: tkinter.ttk.Treeview, filter_id: str, filter_name: str):
         for row in treeview.get_children():
             treeview.delete(row)
 
-        items = api.filter_items(connection, filter_id, filter_name)
+        items = api.filter_items(self.connection, filter_id, filter_name)
         for item in items:
             treeview.insert("", 0, values=(item[0], item[1], item[2]))
+
+    def update_events(self, treeview: tkinter.ttk.Treeview):
+        for row in treeview.get_children():
+            treeview.delete(row)
+
+        items = api.get_events(self.connection)
+        for item in items:
+            treeview.insert("", 0, values=(item[0], item[1], item[2], item[3], item[4], item[5]))
 
     def update_qty(self, item_id: str, query_type: str, event_type: str, qty: str):
         item = None
@@ -64,8 +72,6 @@ class Session:
             messagebox.showerror("Event Log Failed", "Failed to write log.")
         else:
             messagebox.showinfo("Success", f"Successfully signed {event_type.lower()} {qty} item(s).")
-
-
 
     def add_items(self, treeview: tkinter.ttk.Treeview, connection: Connection, name: str, quantity: str) -> None:
         # Will add quantity to {item} or create a new entry if none exist
@@ -148,13 +154,13 @@ def login(inst):
             # Get Permissions
             inst.perms['View'] = \
                 cur.execute("SELECT View FROM Users WHERE UserID IS ?",
-                        (inst.attempt_user.get(),)).fetchone()[0]
+                            (inst.attempt_user.get(),)).fetchone()[0]
             inst.perms['Signout'] = \
-            cur.execute("SELECT Signout FROM Users WHERE UserID IS ?",
-                        (inst.attempt_user.get(),)).fetchone()[0]
+                cur.execute("SELECT Signout FROM Users WHERE UserID IS ?",
+                            (inst.attempt_user.get(),)).fetchone()[0]
             inst.perms['Events'] = \
-            cur.execute("SELECT Events FROM Users WHERE UserID IS ?",
-                        (inst.attempt_user.get(),)).fetchone()[0]
+                cur.execute("SELECT Events FROM Users WHERE UserID IS ?",
+                            (inst.attempt_user.get(),)).fetchone()[0]
             inst.perms['AddRemove'] = \
                 cur.execute("SELECT AddRemove FROM Users WHERE UserID IS ?",
                             (inst.attempt_user.get(),)).fetchone()[0]
@@ -190,7 +196,7 @@ def create_menus(inst):
     if inst.current_user is not None:
         # Logged in user features:
 
-        user.add_command(label='Logout', command= lambda: inst.logout(), underline=0)
+        user.add_command(label='Logout', command=lambda: inst.logout(), underline=0)
         user.add_command(label='Quit', command=lambda: quit(inst), underline=0)
         top.add_cascade(label='User', menu=user, underline=0)
 
@@ -206,19 +212,16 @@ def create_menus(inst):
             edit_inventory = Menu(top, tearoff=False)
             edit_inventory.add_command(label="Sign item in/out...", command=lambda: create_signoutpage(inst))
             if inst.perms['AddRemove'] == 1:
-
                 edit_inventory.add_command(label="Add item(s)", command=lambda: create_addpage(inst))
                 edit_inventory.add_command(label="Remove item(s)", command=lambda: create_removepage(inst))
 
             top.add_cascade(label='Edit Inventory', menu=edit_inventory, underline=0)
 
-
-
         if inst.perms['Events'] == 1:
             # Add Database edit tab
             view_events = Menu(top, tearoff=False)
             view_events.add_separator()
-            top.add_cascade(label='View Events', menu=view_events, underline=0)
+            top.add_command(label='View Events', command=lambda: create_eventspage(inst))
 
         create_welcomescreen(inst)
 
@@ -283,7 +286,7 @@ def create_viewpage(inst):
     clear_widgets(inst)
 
     view = ttk.Treeview(inst.root, columns=("id", "name", "qty"))
-    inst.update_items(view, inst.connection, "", "")
+    inst.update_items(view, "", "")
     view.heading("id", text="Item ID")
     view.heading("name", text="Name")
     view.heading("qty", text="Quantity")
@@ -301,7 +304,7 @@ def create_viewpage(inst):
     name_entry = Entry(name_frame)
 
     enter_button = Button(filter_frame, text="Filter",
-                          command=lambda: inst.update_items(view, inst.connection, id_entry.get(), name_entry.get()))
+                          command=lambda: inst.update_items(view, id_entry.get(), name_entry.get()))
 
     name_label.pack(side='left')
     name_entry.pack(side='left')
@@ -342,10 +345,8 @@ def create_addpage(inst):
 
     enter_button = Button(filter_frame, text="Add Item(s)",
                           command=lambda: inst.add_items(view,
-                                                            inst.connection,
-                                                            name_entry.get(), quantity_entry.get()))
-
-
+                                                         inst.connection,
+                                                         name_entry.get(), quantity_entry.get()))
 
     name_frame.pack()
     quantity_frame.pack()
@@ -353,6 +354,7 @@ def create_addpage(inst):
 
     filter_frame.pack()
     view.pack()
+
 
 def create_removepage(inst):
     # Clear Screen
@@ -383,9 +385,9 @@ def create_removepage(inst):
 
     enter_button = Button(filter_frame, text="Remove Item(s)",
                           command=lambda: inst.remove_items(view,
-                                                         inst.connection,
-                                                         name_entry.get(),
-                                                         quantity_entry.get()))
+                                                            inst.connection,
+                                                            name_entry.get(),
+                                                            quantity_entry.get()))
 
     name_frame.pack()
     quantity_frame.pack()
@@ -394,8 +396,20 @@ def create_removepage(inst):
     filter_frame.pack()
     view.pack()
 
-def create_eventspage(root):
-    pass
+
+def create_eventspage(inst: Session):
+    clear_widgets(inst)
+
+    view = ttk.Treeview(inst.root, columns=("ts", "uid", "qty", "tp", "iid", "nm"))
+    inst.update_events(view)
+    view.heading("ts", text="Timestamp")
+    view.heading("uid", text="User ID")
+    view.heading("qty", text="Quantity")
+    view.heading("tp", text="Event Type")
+    view.heading("iid", text="Item ID")
+    view.heading("nm", text="Item Name")
+
+    view.pack()
 
 
 def create_signoutpage(inst: Session):
@@ -443,6 +457,5 @@ instance = Session(root)
 
 # Create app menus appropriate to that instance (loggin'd in user)
 create_menus(instance)
-
 
 root.mainloop()
