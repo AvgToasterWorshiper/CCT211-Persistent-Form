@@ -38,12 +38,17 @@ def add_items(connection: Connection, name: str, quantity: str) -> int:
     else:
         return 0
 
-def remove_items(session, connection: Connection, name: str, quantity: str) -> int:
-
+def remove_items(connection: Connection, name: str, quantity: str) -> int:
     # check if quantity is proper:
     if quantity.isnumeric():
         quantity = int(quantity)
         cur = connection.cursor()
+
+        # check if name exists in DB
+        cur.execute("SELECT * FROM items WHERE name=?", (name,))
+        name = cur.fetchall()
+        if not name:
+            return -1
 
         # update the item quantity accordingly
         cur.execute("UPDATE items SET qty=qty-? WHERE name=?",

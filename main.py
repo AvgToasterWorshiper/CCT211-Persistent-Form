@@ -15,11 +15,11 @@ class Session:
         self.attempt_user = StringVar()
         self.attempt_pass = StringVar()
 
-        self.perms = {'View': 0, 'Edit': 0, 'Events': 0}
+        self.perms = {}
 
     def logout(self):
         self.current_user = None
-        self.perms = {'View': 0, 'Edit': 0, 'Events': 0}
+        self.perms = {}
 
         create_menus(self)
 
@@ -48,8 +48,8 @@ class Session:
         status = api.add_items(connection, name, quantity)
         if status == 1:
             message.config(
-                text="Successfully added new entry with {} item(s)".format(
-                    quantity))
+                text="Successfully added {} item(s) to {}".format(
+                    quantity, name))
         elif status == 2:
             message.config(
                 text="Successfully added new entry with {} item(s)".format(
@@ -73,13 +73,15 @@ class Session:
 
         message = Label(self.root, text="", font=("Arial", 12))
 
-        status = api.remove_items(self, connection, name, quantity)
+        status = api.remove_items(connection, name, quantity)
         if status == 1:
             message.config(text="Successfully removed entry: {} with 0 item(s)".format(name))
         elif status == 2:
-            message.config(text="Successfully removed {} item(s)".format(quantity))
+            message.config(text="Successfully removed {} item(s) from {}".format(quantity, name))
         elif status == 0:
             message.config(text="Please use a valid (int) quantity")
+        elif status == -1:
+            message.config(text="{} does not exist in the DB".format(name))
 
         self.update_items(treeview, connection, '', name)
 
