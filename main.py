@@ -15,15 +15,15 @@ class Session:
         self.attempt_user = StringVar()
         self.attempt_pass = StringVar()
 
-        self.perms = {}
+        self.perms = {'View': 0, 'Edit': 0, 'Events': 0}
 
     def logout(self):
         self.current_user = None
-        self.perms = {}
+        self.perms = {'View': 0, 'Edit': 0, 'Events': 0}
 
         create_menus(self)
 
-    def update_items(self, treeview: tkinter.ttk.Treeview, connection: Connection, filter_id: str, filter_name: str) -> None:
+    def update_items(self, treeview: tkinter.ttk.Treeview, connection: Connection, filter_id: str, filter_name: str):
         for row in treeview.get_children():
             treeview.delete(row)
 
@@ -31,8 +31,41 @@ class Session:
         for item in items:
             treeview.insert("", 0, values=(item[0], item[1], item[2]))
 
-    def update_qty(self):
-        pass
+    def update_qty(self, item_id: str, query_type: str, event_type: str, qty: str):
+        item = None
+        if query_type == "id":
+            item = api.get_item(self.connection, item_id)
+        else:
+            item = api.get_item_by_name(self.connection, item_id)
+
+        if int(qty) <= 0:
+            messagebox.showerror("Invalid Quantity", "Negative or zero quantity not permitted.")
+            return
+        if item is None:
+            messagebox.showerror("Item Not Found", "That item doesn't exist.\nPlease verify the item ID and try again")
+            return
+        elif item[2] < int(qty) and event_type.lower() == "out":
+            messagebox.showerror("Invalid Quantity", "Sign out request is larger than current quantity.")
+            return
+
+        if event_type.lower() == "out":
+            if not api.remove_items(self.connection, item[1], qty):
+                messagebox.showerror("Write Failed", "An unexpected error occurred.\n"
+                                                     "Please try again later.")
+                return
+
+        elif event_type.lower() == "in":
+            if not api.add_items(self.connection, item[1], qty):
+                messagebox.showerror("Write Failed", "An unexpected error occurred.\n"
+                                                     "Please try again later.")
+                return
+
+        if not api.insert_event(self.connection, self.current_user, qty, event_type, item_id, item[1]):
+            messagebox.showerror("Event Log Failed", "Failed to write log.")
+        else:
+            messagebox.showinfo("Success", f"Successfully signed {event_type.lower()} {qty} item(s).")
+
+
 
     def add_items(self, treeview: tkinter.ttk.Treeview, connection: Connection, name: str, quantity: str) -> None:
         # Will add quantity to {item} or create a new entry if none exist
@@ -48,8 +81,8 @@ class Session:
         status = api.add_items(connection, name, quantity)
         if status == 1:
             message.config(
-                text="Successfully added {} item(s) to {}".format(
-                    quantity, name))
+                text="Successfully added new entry with {} item(s)".format(
+                    quantity))
         elif status == 2:
             message.config(
                 text="Successfully added new entry with {} item(s)".format(
@@ -73,15 +106,13 @@ class Session:
 
         message = Label(self.root, text="", font=("Arial", 12))
 
-        status = api.remove_items(connection, name, quantity)
+        status = api.remove_items(self, connection, name, quantity)
         if status == 1:
             message.config(text="Successfully removed entry: {} with 0 item(s)".format(name))
         elif status == 2:
-            message.config(text="Successfully removed {} item(s) from {}".format(quantity, name))
+            message.config(text="Successfully removed {} item(s)".format(quantity))
         elif status == 0:
             message.config(text="Please use a valid (int) quantity")
-        elif status == -1:
-            message.config(text="{} does not exist in the DB".format(name))
 
         self.update_items(treeview, connection, '', name)
 
@@ -396,7 +427,8 @@ def create_signoutpage(inst: Session):
     Radiobutton(inst.root, text="In", variable=sign, value="in").pack()
     Radiobutton(inst.root, text="Out", variable=sign, value="out").pack()
 
-    Button(inst.root, text="Submit", command=lambda: inst.update_qty())
+    Button(inst.root, text="Submit", command=lambda: inst.update_qty(item_query.get(), query_type.get(), sign.get(),
+                                                                     qty.get())).pack()
 
 
 # Initialize tk
