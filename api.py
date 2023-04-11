@@ -67,6 +67,8 @@ def remove_items(connection: Connection, name: str, quantity: str) -> int:
         # Check to see if qty <= 0
         cur.execute("SELECT qty FROM items WHERE name=?", (name,))
         amount = cur.fetchall()
+        if not amount:
+            return -1
         # Had to do this weird indexing cause of tuple format
         if amount[0][0] <= 0:
             # Remove entry
